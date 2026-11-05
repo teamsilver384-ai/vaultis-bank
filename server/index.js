@@ -237,6 +237,10 @@ app.post('/api/admin/transaction', (req, res) => {
   res.json({ success: true, message: `Posted [${customTx.type.toUpperCase()}] $${Math.abs(numAmount).toFixed(2)} to ${accKey}.`, transaction: customTx });
 });
 
+app.get('/', (req, res) => {
+  res.send('<h1>Vaultis Bank API is live and running!</h1>');
+});
+
 app.listen(PORT, () => {
   console.log(`Vaultis Bank BoA Core API running on http://localhost:${PORT}`);
 });
