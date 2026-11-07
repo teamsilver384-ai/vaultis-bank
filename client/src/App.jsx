@@ -1,1 +1,1 @@
-﻿powershell -command "Get-Clipboard | Set-Content -Path 'src\App.jsx' -Encoding UTF8"
+powershell -command "[System.IO.File]::WriteAllText('client\src\App.jsx', (Get-Clipboard -Raw))"
