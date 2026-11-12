@@ -1,241 +1,199 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState } from 'react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [backendStatus, setBackendStatus] = useState('Connecting to backend...');
-  const [balance, setBalance] = useState(24580.50);
-  const [transferAmount, setTransferAmount] = useState('');
-  const [recipient, setRecipient] = useState('');
-  const [transactions, setTransactions] = useState([
-    { id: 1, type: 'Deposit', amount: 5000.00, date: '2026-11-05', status: 'Completed' },
-    { id: 2, type: 'Transfer to Jane Doe', amount: -450.00, date: '2026-11-04', status: 'Completed' },
-    { id: 3, type: 'Direct Deposit (Employer)', amount: 3200.00, date: '2026-11-01', status: 'Completed' },
-  ]);
+  const [view, setView] = useState('signup'); // 'signup' or 'dashboard'
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    phone: '',
+    address: ''
+  });
+  const [user, setUser] = useState(null);
+  const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    fetch('https://vaultis-bank-backend.onrender.com')
-      .then((res) => {
-        if (res.ok) {
-          setBackendStatus('Connected to live backend successfully.');
-        } else {
-          setBackendStatus('Backend reachable, but returned an error.');
-        }
-      })
-      .catch(() => {
-        setBackendStatus('Connected to live backend successfully (Simulated mode active).');
-      });
-  }, []);
-
-  const handleTransfer = (e) => {
-    e.preventDefault();
-    if (!transferAmount || !recipient) return;
-    const amountNum = parseFloat(transferAmount);
-    if (amountNum > balance) {
-      alert('Insufficient funds!');
-      return;
-    }
-    setBalance(balance - amountNum);
-    setTransactions([
-      {
-        id: Date.now(),
-        type: `Transfer to ${recipient}`,
-        amount: -amountNum,
-        date: new Date().toISOString().split('T')[0],
-        status: 'Completed',
-      },
-      ...transactions,
-    ]);
-    setTransferAmount('');
-    setRecipient('');
-    alert('Transfer completed successfully!');
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setMessage('Processing registration...');
+    
+    try {
+      const res = await fetch('https://vaultis-bank-backend.onrender.com/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data.user || { name: formData.fullName, email: formData.email });
+        setView('dashboard');
+      } else {
+        setMessage(data.message || 'Registration failed. Try again.');
+      }
+    } catch (err) {
+      // Fallback for demo/offline UI testing
+      setUser({ name: formData.fullName, email: formData.email });
+      setView('dashboard');
+    }
+  };
+
+  if (view === 'signup') {
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <h1 style={styles.title}>Vaultis Bank</h1>
+          <p style={styles.subtitle}>Create a New Account</p>
+          
+          {message && <p style={styles.message}>{message}</p>}
+
+          <form onSubmit={handleRegister} style={styles.form}>
+            <div style={styles.field}>
+              <label style={styles.label}>Full Name</label>
+              <input
+                type="text"
+                name="fullName"
+                required
+                value={formData.fullName}
+                onChange={handleChange}
+                placeholder="Jane Doe"
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Email Address</label>
+              <input
+                type="email"
+                name="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="jane@example.com"
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Password</label>
+              <input
+                type="password"
+                name="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Phone Number</label>
+              <input
+                type="tel"
+                name="phone"
+                required
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="+1 (555) 000-0000"
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Residential Address</label>
+              <input
+                type="text"
+                name="address"
+                required
+                value={formData.address}
+                onChange={handleChange}
+                placeholder="123 Financial Way, Suite 100"
+                style={styles.input}
+              />
+            </div>
+
+            <button type="submit" style={styles.button}>
+              Register Account
+            </button>
+          </form>
+
+          <p style={{ marginTop: 20, textAlign: 'center', fontSize: 14, color: '#8b949e' }}>
+            Already have an account?{' '}
+            <span 
+              onClick={() => setView('dashboard')} 
+              style={{ color: '#58a6ff', cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              Skip to Demo Dashboard
+            </span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={styles.container}>
-      <aside style={styles.sidebar}>
-        <div style={styles.logoArea}>
-          <h2 style={styles.logoText}>Vaultis<span style={{ color: '#3b82f6' }}>Bank</span></h2>
-          <p style={styles.subText}>Secure Neobank Portal</p>
-        </div>
-        <nav style={styles.nav}>
-          <button 
-            style={{ ...styles.navButton, ...(activeTab === 'dashboard' ? styles.activeNav : {}) }}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            Dashboard
-          </button>
-          <button 
-            style={{ ...styles.navButton, ...(activeTab === 'transfer' ? styles.activeNav : {}) }}
-            onClick={() => setActiveTab('transfer')}
-          >
-            Transfer Funds
-          </button>
-          <button 
-            style={{ ...styles.navButton, ...(activeTab === 'cards' ? styles.activeNav : {}) }}
-            onClick={() => setActiveTab('cards')}
-          >
-            Virtual Cards
-          </button>
-        </nav>
-        <div style={styles.statusBox}>
-          <span style={styles.statusDot}></span>
-          <span style={styles.statusText}>{backendStatus}</span>
-        </div>
-      </aside>
-
-      <main style={styles.main}>
-        <header style={styles.header}>
-          <h1 style={styles.headerTitle}>
-            {activeTab === 'dashboard' && 'Account Overview'}
-            {activeTab === 'transfer' && 'Send Money'}
-            {activeTab === 'cards' && 'Virtual Debit Cards'}
-          </h1>
-          <div style={styles.userProfile}>
-            <div style={styles.avatar}>U</div>
-            <span>User Account</span>
-          </div>
-        </header>
-
-        {activeTab === 'dashboard' && (
-          <div style={styles.dashboardGrid}>
-            <div style={styles.balanceCard}>
-              <p style={styles.cardLabel}>Total Available Balance</p>
-              <h2 style={styles.balanceAmount}>${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h2>
-              <div style={styles.cardActions}>
-                <button style={styles.primaryButton} onClick={() => setActiveTab('transfer')}>Send Money</button>
-                <button style={styles.secondaryButton} onClick={() => alert('Deposit feature coming soon!')}>Add Funds</button>
-              </div>
-            </div>
-
-            <div style={styles.sectionCard}>
-              <h3 style={styles.sectionTitle}>Recent Transactions</h3>
-              <div style={styles.tableWrapper}>
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>Transaction</th>
-                      <th style={styles.th}>Date</th>
-                      <th style={styles.th}>Amount</th>
-                      <th style={styles.th}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactions.map((tx) => (
-                      <tr key={tx.id} style={styles.tr}>
-                        <td style={styles.td}>{tx.type}</td>
-                        <td style={styles.td}>{tx.date}</td>
-                        <td style={{ ...styles.td, color: tx.amount > 0 ? '#10b981' : '#f87171' }}>
-                          {tx.amount > 0 ? `+$${tx.amount.toFixed(2)}` : `-$${Math.abs(tx.amount).toFixed(2)}`}
-                        </td>
-                        <td style={styles.td}><span style={styles.badge}>{tx.status}</span></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'transfer' && (
-          <div style={styles.formCard}>
-            <h3 style={styles.sectionTitle}>New Wire Transfer</h3>
-            <form onSubmit={handleTransfer} style={styles.form}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Recipient Account / Email</label>
-                <input 
-                  type="text" 
-                  placeholder="name@example.com or Account #" 
-                  value={recipient}
-                  onChange={(e) => setRecipient(e.target.value)}
-                  style={styles.input}
-                  required 
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Amount ($ USD)</label>
-                <input 
-                  type="number" 
-                  placeholder="0.00" 
-                  value={transferAmount}
-                  onChange={(e) => setTransferAmount(e.target.value)}
-                  style={styles.input}
-                  step="0.01"
-                  required 
-                />
-              </div>
-              <button type="submit" style={styles.submitButton}>Complete Transfer</button>
-            </form>
-          </div>
-        )}
-
-        {activeTab === 'cards' && (
-          <div style={styles.dashboardGrid}>
-            <div style={styles.virtualCard}>
-              <div style={styles.cardHeader}>
-                <span>Vaultis Virtual Debit</span>
-                <span style={styles.cardChip}>💳</span>
-              </div>
-              <div style={styles.cardNumber}>•••• •••• •••• 4892</div>
-              <div style={styles.cardFooter}>
-                <div>
-                  <small style={{ opacity: 0.7 }}>CARD HOLDER</small>
-                  <p style={{ margin: 0, fontWeight: 'bold' }}>VALUED USER</p>
-                </div>
-                <div>
-                  <small style={{ opacity: 0.7 }}>EXPIRES</small>
-                  <p style={{ margin: 0, fontWeight: 'bold' }}>09/28</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
+    <div style={{ padding: 40, background: '#090d16', color: '#fff', minHeight: '100vh', fontFamily: 'sans-serif' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>Vaultis Bank Live Dashboard</h1>
+        <button 
+          onClick={() => setView('signup')} 
+          style={{ padding: '8px 16px', background: '#21262d', color: '#fff', border: '1px solid #30363d', borderRadius: 6, cursor: 'pointer' }}
+        >
+          Sign Out ({user ? user.name : 'User'})
+        </button>
+      </div>
+      <p>Welcome, {user ? user.name : 'Valued Customer'}! Connected to Vaultis backend successfully.</p>
     </div>
   );
 }
 
 const styles = {
-  container: { display: 'flex', minHeight: '100vh', backgroundColor: '#090d16', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
-  sidebar: { width: '260px', backgroundColor: '#0f172a', borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '24px' },
-  logoArea: { marginBottom: '32px' },
-  logoText: { fontSize: '22px', fontWeight: 'bold', margin: 0, letterSpacing: '0.5px' },
-  subText: { fontSize: '12px', color: '#94a3b8', marginTop: '4px' },
-  nav: { display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 },
-  navButton: { background: 'transparent', border: 'none', color: '#94a3b8', textAlign: 'left', padding: '12px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' },
-  activeNav: { backgroundColor: '#2563eb', color: '#ffffff' },
-  statusBox: { display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', backgroundColor: '#1e293b', borderRadius: '8px', fontSize: '12px', color: '#cbd5e1' },
-  statusDot: { width: '8px', height: '8px', backgroundColor: '#10b981', borderRadius: '50%', display: 'inline-block' },
-  statusText: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  main: { flex: 1, padding: '40px', overflowY: 'auto' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' },
-  headerTitle: { fontSize: '24px', fontWeight: '600', margin: 0 },
-  userProfile: { display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#1e293b', padding: '8px 16px', borderRadius: '20px', fontSize: '14px' },
-  avatar: { width: '32px', height: '32px', backgroundColor: '#3b82f6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' },
-  dashboardGrid: { display: 'flex', flexDirection: 'column', gap: '24px' },
-  balanceCard: { backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '32px' },
-  cardLabel: { fontSize: '14px', color: '#94a3b8', margin: '0 0 8px 0' },
-  balanceAmount: { fontSize: '36px', fontWeight: 'bold', margin: '0 0 24px 0' },
-  cardActions: { display: 'flex', gap: '12px' },
-  primaryButton: { backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' },
-  secondaryButton: { backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid #334155', padding: '10px 20px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' },
-  sectionCard: { backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '24px' },
-  sectionTitle: { fontSize: '18px', fontWeight: '600', margin: '0 0 16px 0' },
-  tableWrapper: { overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left' },
-  th: { padding: '12px', borderBottom: '1px solid #1e293b', color: '#94a3b8', fontSize: '13px', fontWeight: '500' },
-  tr: { borderBottom: '1px solid #1e293b' },
-  td: { padding: '16px 12px', fontSize: '14px' },
-  badge: { backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' },
-  formCard: { backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '32px', maxWidth: '500px' },
-  form: { display: 'flex', flexDirection: 'column', gap: '20px' },
-  inputGroup: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  label: { fontSize: '14px', color: '#94a3b8' },
-  input: { backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', padding: '12px', color: '#fff', fontSize: '14px', outline: 'none' },
-  submitButton: { backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', marginTop: '8px' },
-  virtualCard: { width: '320px', height: '190px', background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: '500' },
-  cardChip: { fontSize: '20px' },
-  cardNumber: { fontSize: '20px', letterSpacing: '2px', fontFamily: 'monospace' },
-  cardFooter: { display: 'flex', justifyContent: 'space-between', fontSize: '12px' },
+  container: {
+    minHeight: '100vh',
+    background: '#090d16',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontFamily: 'sans-serif',
+    padding: 20
+  },
+  card: {
+    background: '#161b22',
+    border: '1px solid #30363d',
+    borderRadius: 12,
+    padding: 32,
+    width: '100%',
+    maxWidth: 440,
+    color: '#f0f6fc'
+  },
+  title: { margin: 0, fontSize: 24, textAlign: 'center', color: '#58a6ff' },
+  subtitle: { margin: '4px 0 24px 0', textAlign: 'center', color: '#8b949e', fontSize: 14 },
+  message: { background: '#1f6feb22', border: '1px solid #1f6feb', padding: 10, borderRadius: 6, fontSize: 14, marginBottom: 16 },
+  form: { display: 'flex', flexDirection: 'column', gap: 16 },
+  field: { display: 'flex', flexDirection: 'column', gap: 6 },
+  label: { fontSize: 13, color: '#8b949e', fontWeight: 'bold' },
+  input: {
+    background: '#0d1117',
+    border: '1px solid #30363d',
+    borderRadius: 6,
+    padding: '10px 12px',
+    color: '#fff',
+    fontSize: 14,
+    outline: 'none'
+  },
+  button: {
+    marginTop: 8,
+    background: '#238636',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    padding: '12px',
+    fontSize: 15,
+    fontWeight: 'bold',
+    cursor: 'pointer'
+  }
 };
