@@ -7,6 +7,59 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+// Parse JSON request bodies
+app.use(express.json());
+
+// Temporary in-memory user database
+const users = [];
+
+// User Registration Route
+app.post('/api/register', (req, res) => {
+  const { fullName, email, password, phone, address } = req.body;
+
+  if (!fullName || !email || !password || !phone || !address) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  const newUser = {
+    id: Date.now(),
+    fullName,
+    email,
+    phone,
+    address,
+    createdAt: new Date()
+  };
+
+  users.push(newUser);
+
+  return res.status(201).json({
+    message: 'Account registered successfully!',
+    user: newUser
+  });
+});
+// Registration API Endpoint
+app.post('/api/register', (req, res) => {
+  const { fullName, email, password, phone, address } = req.body;
+
+  if (!fullName || !email || !password || !phone || !address) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  // Example user object (In production, hash password & save to DB)
+  const newUser = {
+    id: Date.now(),
+    fullName,
+    email,
+    phone,
+    address,
+    createdAt: new Date()
+  };
+
+  return res.status(201).json({
+    message: 'User registered successfully!',
+    user: newUser
+  });
+});
 
 let bankConfig = {
   maxSingleTransfer: 15000.00,
