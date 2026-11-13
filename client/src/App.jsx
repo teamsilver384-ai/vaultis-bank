@@ -1,3 +1,3 @@
 ﻿git add client/src/App.jsx
-git commit -m "Deploy UBA internet banking slider design"
+git commit -m "Deploy UBA slider homepage"
 git push origin main
